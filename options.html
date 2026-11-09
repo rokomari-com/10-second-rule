@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>10 Second Rule - Settings</title>
+<style>
+  :root { color-scheme: light dark; }
+  body { font: 15px system-ui, sans-serif; max-width: 640px; margin: 32px auto; padding: 0 16px; }
+  h1 { font-size: 22px; } h2 { font-size: 16px; margin-top: 28px; }
+  ul { list-style: none; padding: 0; margin: 0 0 8px; }
+  li { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; border-bottom: 1px solid #8884; }
+  .row { display: flex; gap: 8px; align-items: center; margin: 8px 0; }
+  input[type=text] { flex: 1; } input, button { font: inherit; padding: 5px 8px; }
+  table { border-collapse: collapse; width: 100%; } th, td { text-align: left; padding: 5px 8px; border-bottom: 1px solid #8884; }
+  td.num, th.num { text-align: right; }
+  .hint { opacity: .65; font-size: 13px; }
+  #modal { position: fixed; inset: 0; background: #000c; display: none; align-items: center; justify-content: center; }
+  #modal.on { display: flex; }
+  #modal .box { background: Canvas; color: CanvasText; padding: 24px; border-radius: 8px; max-width: 380px; text-align: center; }
+  #mcount { font-size: 56px; font-weight: 200; }
+</style>
+</head>
+<body>
+<h1>10 Second Rule</h1>
+<p class="hint">Strengthening changes apply instantly. Weakening changes make you wait 30 seconds first.</p>
+
+<h2>Gated sites</h2>
+<ul id="hosts"></ul>
+<form class="row" id="addForm">
+  <input type="text" id="newHost" placeholder="example.com" autocomplete="off">
+  <button type="submit">Add</button>
+</form>
+
+<h2>Timing</h2>
+<div class="row"><label for="wait">Wait (seconds)</label>
+  <input type="number" id="wait" min="1" step="1"><button id="saveWait">Apply</button></div>
+<div class="row"><label for="grace">Grace period (minutes)</label>
+  <input type="number" id="grace" min="0" step="1"><button id="saveGrace">Apply</button></div>
+<p class="hint" id="msg"></p>
+
+<h2>Stats</h2>
+<table>
+  <thead><tr><th>Host</th><th class="num">Shown</th><th class="num">Completed</th><th class="num">Completed %</th></tr></thead>
+  <tbody id="stats"></tbody>
+</table>
+
+<div id="modal" role="dialog" aria-modal="true">
+  <div class="box">
+    <p id="mtext"></p>
+    <div id="mcount">30</div>
+    <p class="hint">The change applies when the countdown ends. Closing this page cancels it.</p>
+    <button id="mcancel">Cancel</button>
+  </div>
+</div>
+<script src="options.js"></script>
+</body>
+</html>
