@@ -80,7 +80,8 @@
     'align-items:center;justify-content:center;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;' +
     'user-select:none;cursor:default}' +
     '.n{font-size:min(30vw,260px);font-weight:200;line-height:1;font-variant-numeric:tabular-nums}' +
-    '.t{margin-top:24px;font-size:22px;opacity:.7;letter-spacing:.02em}';
+    '.t{margin-top:24px;font-size:22px;opacity:.7;letter-spacing:.02em}' +
+    '.p{margin-top:12px;font-size:16px;opacity:.5;min-height:1.2em}';
 
   function showGate(key, waitSeconds) {
     gateActive = true;
@@ -96,7 +97,8 @@
     const o = document.createElement('div'); o.className = 'o';
     const num = document.createElement('div'); num.className = 'n';
     const txt = document.createElement('div'); txt.className = 't'; txt.textContent = 'Is this worth it?';
-    o.append(num, txt);
+    const pausedLine = document.createElement('div'); pausedLine.className = 'p';
+    o.append(num, txt, pausedLine);
     shadow.append(style, o);
 
     const prevOverflow = document.documentElement.style.overflow;
@@ -141,10 +143,10 @@
     mo.observe(document.documentElement, { childList: true });
     mo.observe(root, { attributes: true });
 
-    // Countdown accumulates only visible, non-prerendering time.
+    // Countdown accumulates only time the tab is visible, non-prerendering and focused.
     const need = waitSeconds * 1000;
     let acc = 0, last = Date.now(), wasVis = false, shownCounted = false;
-    const isVis = () => document.visibilityState === 'visible' && !document.prerendering;
+    const isVis = () => document.visibilityState === 'visible' && !document.prerendering && document.hasFocus();
     const step = () => {
       const now = Date.now();
       const v = isVis();
@@ -152,12 +154,20 @@
       wasVis = v;
       last = now;
       if (v && !shownCounted) { shownCounted = true; bump(key, 'shown'); }
+      const msg = v ? '' : 'paused, come back to continue';
+      if (pausedLine.textContent !== msg) {
+        pausedLine.textContent = msg;
+        if (v) root.removeAttribute('data-paused'); else root.setAttribute('data-paused', '');
+      }
       const left = Math.max(0, Math.ceil((need - acc) / 1000));
       num.textContent = String(left);
       return left;
     };
     const onVis = () => step();
     const resetClock = () => { wasVis = false; last = Date.now(); step(); };
+    const onFocusChange = resetClock;
+    window.addEventListener('focus', onFocusChange);
+    window.addEventListener('blur', onFocusChange);
     document.addEventListener('visibilitychange', onVis);
     document.addEventListener('prerenderingchange', onVis);
     window.addEventListener('pageshow', resetClock);
@@ -177,6 +187,8 @@
       document.removeEventListener('visibilitychange', onVis);
       document.removeEventListener('prerenderingchange', onVis);
       window.removeEventListener('pageshow', resetClock);
+      window.removeEventListener('focus', onFocusChange);
+      window.removeEventListener('blur', onFocusChange);
       document.removeEventListener('freeze', onFreeze);
       ['wheel', 'touchmove'].forEach((n) => window.removeEventListener(n, block, blockOpts));
       try { if (supportsPopover && root.matches(':popover-open')) root.hidePopover(); } catch (e) { /* ignore */ }

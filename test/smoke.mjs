@@ -111,7 +111,29 @@ try {
   await setVis('visible');
   await hA.waitForTimeout(4000);
   ok(!(await overlay(hA)), 'overlay completes after visible time');
-  await hA.close();
+  // unfocused-window pause: spoof hasFocus=false + blur, then restore
+  await setCfg({ hosts: ['example.com'], waitSeconds: 3, graceMinutes: 5 });
+  const fA = await ctx.newPage();
+  await fA.route('https://example.com/f', (r) => r.fulfill(html('focus test')));
+  await fA.goto('https://example.com/f', { waitUntil: 'commit' });
+  await fA.waitForSelector('#__ten-second-rule__', { state: 'attached', timeout: 3000 });
+  const cdpF = await ctx.newCDPSession(fA);
+  const worldsF = [];
+  cdpF.on('Runtime.executionContextCreated', (e) => worldsF.push(e.context));
+  await cdpF.send('Runtime.enable');
+  const isoF = worldsF.find((w) => w.origin.startsWith('chrome-extension://'));
+  const setFocus = (f) => cdpF.send('Runtime.evaluate', { contextId: isoF.id, expression:
+    `document.hasFocus=()=>${f};window.dispatchEvent(new Event('${f ? 'focus' : 'blur'}'))` });
+  const paused = () => fA.evaluate(() => document.getElementById('__ten-second-rule__')?.hasAttribute('data-paused'));
+  ok(!!isoF, 'found isolated world for focus test');
+  await setFocus(false);
+  await fA.waitForTimeout(4500);
+  ok(await overlay(fA), 'overlay still present after unfocused > wait');
+  ok(await paused(), 'paused line shown while unfocused');
+  await setFocus(true);
+  await fA.waitForTimeout(3500);
+  ok(!(await overlay(fA)), 'overlay completes within wait+0.5s after refocus');
+  await fA.close();
 
   // options friction
   const o = await ctx.newPage();
